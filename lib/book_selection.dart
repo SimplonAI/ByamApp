@@ -16,21 +16,32 @@ class _BookSelectionScreenState extends State<BookSelectionScreen> {
   getRecommended() async {
     try {
       if (_rated.isEmpty) {
-        var response = await Dio().get("http://localhost:8000/popularity");
-        if (response.statusCode != 200) {
-          return null;
+        final response = await Dio().get("http://localhost:8000/popularity");
+        if (response.statusCode == 200) {
+          _setRecommanded(response.data);
         }
-        for (var book in response.data as List) {
-          final Book b = Book.fromJson(book);
-          if (!_rated.contains(b)) _recommanded[book["book_title"]] = b;
+      } else if (_rated.length < 5) {
+        for (var rated in _rated) {
+          final response = await Dio().get(
+              "http://localhost:8000/content-based?book_title=${rated.title}");
+          if (response.statusCode == 200) {
+            _setRecommanded(response.data);
+          }
         }
       }
-      setState(() {
-        _recommanded = _recommanded;
-      });
     } catch (e) {
       return null;
     }
+  }
+
+  _setRecommanded(List data) {
+    for (var book in data) {
+      final Book b = Book.fromJson(book);
+      if (!_rated.contains(b)) _recommanded[book["book_title"]] = b;
+    }
+    setState(() {
+      _recommanded = _recommanded;
+    });
   }
 
   @override
